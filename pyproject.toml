@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raster-to-polygons-fast"
+version = "0.1.0"
+description = "Convert raster images to clean vector polygon geometries with sliver removal and optional smoothing"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Spatial Workflow", email = "info@spatialworkflow.io"}
+]
+keywords = ["gis", "raster", "vector", "polygons", "gdal", "geospatial"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+dependencies = [
+    "rasterio>=1.3.0",
+    "shapely>=2.0.0",
+    "numpy>=1.21.0",
+    "click>=8.0.0",
+    "fiona>=1.9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "black>=23.0.0",
+    "flake8>=5.0.0",
+    "mypy>=0.990",
+]
+
+[project.scripts]
+raster-to-polygons = "raster_to_polygons.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["raster_to_polygons*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=raster_to_polygons --cov-report=term-missing --cov-report=html"
+python_files = "test_*.py"
+
+[tool.coverage.run]
+branch = true
+source = ["raster_to_polygons"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+fail_under = 100
+
+[tool.black]
+line-length = 100
+target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.8"
+strict = true
+
