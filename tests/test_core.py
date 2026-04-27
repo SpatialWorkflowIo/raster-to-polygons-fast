@@ -7,6 +7,7 @@ Achieves 100% line coverage of core.py.
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import numpy as np
@@ -18,6 +19,7 @@ from raster_to_polygons.core import (
     _raster_to_shapes,
     _save_polygons,
 )
+import raster_to_polygons.core as core_module
 
 
 class TestRasterToPolygons:
@@ -182,6 +184,24 @@ class TestRasterToPolygons:
         with rasterio.open(zero_band_path) as src:
             assert src.count == 1
 
+    def test_raster_has_zero_bands_raises_value_error_via_mock(self, tmp_path):
+        """Cover the src.count == 0 defensive check in raster_to_polygons."""
+        input_file = tmp_path / "dummy.tif"
+        input_file.write_text("placeholder")
+
+        class FakeDataset:
+            count = 0
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+        with patch.object(core_module.rasterio, "open", return_value=FakeDataset()):
+            with pytest.raises(ValueError, match="Raster has no bands"):
+                raster_to_polygons(input_file)
+
     def test_raster_to_polygons_creates_properties(self, tmp_geotiff):
         """Test that polygon properties are correctly created."""
         polygons = raster_to_polygons(tmp_geotiff)
@@ -294,6 +314,37 @@ class TestRasterToShapes:
 
         # Should return empty or handle gracefully
         assert isinstance(shapes_list, list)
+
+    def test_raster_to_shapes_invalid_polygon_becomes_empty(self):
+        """Cover invalid polygon repair and empty skip path."""
+        data = np.array([[1]], dtype=np.uint8)
+
+        class EmptyPolygon:
+            is_valid = True
+            is_empty = True
+            area = 0.0
+            length = 0.0
+
+        class InvalidPolygon:
+            is_valid = False
+            is_empty = False
+
+            def buffer(self, *_args, **_kwargs):
+                return EmptyPolygon()
+
+        with patch.object(core_module, "shapes", return_value=[({"type": "Polygon", "coordinates": []}, 1)]):
+            with patch.object(core_module, "shape", return_value=InvalidPolygon()):
+                out = _raster_to_shapes(data, transform=None, crs=None)
+        assert out == []
+
+    def test_raster_to_shapes_shape_exception_warns_and_continues(self):
+        """Cover exception branch in _raster_to_shapes."""
+        data = np.array([[1]], dtype=np.uint8)
+        with patch.object(core_module, "shapes", return_value=[({"type": "Polygon", "coordinates": []}, 7)]):
+            with patch.object(core_module, "shape", side_effect=RuntimeError("boom")):
+                with pytest.warns(UserWarning, match="Failed to convert shape for value 7"):
+                    out = _raster_to_shapes(data, transform=None, crs=None)
+        assert out == []
 
 
 class TestSavePolygons:

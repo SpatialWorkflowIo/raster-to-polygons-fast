@@ -114,6 +114,20 @@ class TestRemoveSlivers:
         # Should keep only the first (non-thin) polygon
         assert len(filtered) > 0
 
+    def test_remove_slivers_zero_area_geometry_skips_ratio_check(self):
+        """Cover branch where area is 0 and ratio computation is skipped."""
+
+        class ZeroAreaGeom:
+            area = 0.0
+            length = 10.0
+
+        filtered = remove_slivers(
+            [(ZeroAreaGeom(), {"value": 9})],
+            min_area=0.0,
+            max_perimeter_area_ratio=0.1,
+        )
+        assert len(filtered) == 1
+
 
 class TestIsValidPolygon:
     """Test polygon validation."""
@@ -151,6 +165,17 @@ class TestIsValidPolygon:
         poly, _ = small_polygon
         # Thin rectangle has high perimeter/area ratio
         assert not is_valid_polygon(poly, max_perimeter_area_ratio=100.0)
+
+    def test_is_valid_polygon_zero_area_skips_ratio_check(self):
+        """Cover branch where area is 0 and ratio check is bypassed."""
+
+        class ZeroAreaValidGeom:
+            is_valid = True
+            is_empty = False
+            area = 0.0
+            length = 1.0
+
+        assert is_valid_polygon(ZeroAreaValidGeom(), max_perimeter_area_ratio=0.001)
 
 
 class TestFillHoles:

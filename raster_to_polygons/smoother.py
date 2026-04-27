@@ -115,9 +115,8 @@ def _chaikin_algorithm(coords: List[Tuple[float, float]]) -> List[Tuple[float, f
         smooth_coords.append(q)
         smooth_coords.append(r)
 
-    # Close the ring
-    if smooth_coords:
-        smooth_coords.append(smooth_coords[0])
+    # Close the ring (len(coords) >= 3 guarantees at least one generated point)
+    smooth_coords.append(smooth_coords[0])
 
     return smooth_coords
 
